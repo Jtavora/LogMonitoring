@@ -1,13 +1,17 @@
-# Usa a imagem oficial do .NET para build e runtime
+# Usando a imagem base do SDK para build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
-COPY . ./
-RUN dotnet restore
-RUN dotnet publish -c Release -o out
 
-# Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+# Definir diretório de trabalho
 WORKDIR /app
-COPY --from=build /app/out .
-EXPOSE 8080
-ENTRYPOINT ["dotnet", "LogMonitoring.dll"]
+
+# Copiar todos os arquivos da aplicação para o container
+COPY . ./
+
+# Restaurar dependências
+RUN dotnet restore
+
+# Expor a porta para o container (ajuste conforme necessário)
+EXPOSE 5255
+
+# Rodar a aplicação com `dotnet run`
+CMD ["dotnet", "run", "--urls", "http://0.0.0.0:5255"]

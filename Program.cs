@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 var builder = WebApplication.CreateBuilder(args);
 
 // Adicionar serviços
-var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION") ?? "localhost:6379";
+var redisConnection = Environment.GetEnvironmentVariable("REDIS_CONNECTION") ?? "redis:6379";
 builder.Services.AddSingleton<RedisService>(sp =>
 {
     var hubContext = sp.GetRequiredService<IHubContext<LogHub>>();
