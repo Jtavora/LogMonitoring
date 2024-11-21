@@ -10,15 +10,63 @@ services:
     depends_on:
       - redis
     networks:
-      - app-network
+      - kong-net
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
     networks:
-      - app-network
+      - kong-net
 
+  kong-database:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+    networks:
+      - kong-net
+
+  kong-migrations:
+    build: ./Kong
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_CASSANDRA_CONTACT_POINTS: kong-database
+    volumes:
+      - ./wait-for-it.sh:/wait-for-it.sh
+    command: ["/wait-for-it.sh", "kong-database:5432", "--", "kong", "migrations", "bootstrap"]
+    networks:
+      - kong-net
+    depends_on:
+      - kong-database
+
+  kong:
+    build: ./Kong  # Usa a imagem com nc incluído
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_ADMIN_LISTEN: '0.0.0.0:8001, 0.0.0.0:8444 ssl'
+    ports:
+      - "8000:8000"   # Porta de proxy HTTP
+      - "8443:8443"   # Porta de proxy HTTPS
+      - "8001:8001"   # Porta de administração HTTP
+      - "8444:8444"   # Porta de administração HTTPS
+    networks:
+      - kong-net
+    depends_on:
+      - kong-migrations
+    
 networks:
-  app-network:
+  kong-net:
     driver: bridge
+  
+volumes:
+  kong_data:
